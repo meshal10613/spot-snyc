@@ -2,8 +2,8 @@ package repository
 
 import (
 	"errors"
-	"spot-sync/models"
-	"spot-sync/utils"
+	"spot-sync/internal/models"
+	"spot-sync/pkg/utils"
 
 	"gorm.io/gorm"
 )

@@ -3,11 +3,11 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"spot-sync/dto"
-	"spot-sync/httpresponse"
-	"spot-sync/repository"
-	"spot-sync/service"
-	"spot-sync/utils"
+	"spot-sync/internal/dto"
+	"spot-sync/pkg/httpresponse"
+	"spot-sync/internal/repository"
+	"spot-sync/internal/service"
+	"spot-sync/pkg/utils"
 	"strconv"
 	"strings"
 

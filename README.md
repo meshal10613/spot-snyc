@@ -53,11 +53,19 @@ This project follows **Clean Architecture** with strict separation of concerns:
    └───────┘          └──────────┘
 ```
 
-**Dependency Injection** is done manually in `server/http.go`:
+**Dependency Injection** is done manually in `internal/server/http.go`:
 
 ```
 Repository → Service → Handler → Routes
 ```
+
+The project is organized into three top-level directories:
+
+| Directory | Purpose |
+|---|---|
+| **`cmd/`** | Application entry point |
+| **`internal/`** | Private application code (not importable by external projects) |
+| **`pkg/`** | Reusable packages that can be imported by external projects |
 
 ---
 
@@ -66,49 +74,54 @@ Repository → Service → Handler → Routes
 ```
 spot-sync/
 ├── cmd/
-│   └── main.go              # Entry point (config, DB, migrations, seed, server start)
-├── config/
-│   ├── config.go            # Environment variable loading
-│   └── db.go                # PostgreSQL connection via GORM
-├── dto/
-│   ├── auth_dto.go          # Auth request/response structs
-│   ├── reservation_dto.go   # Reservation request/response structs
-│   └── zone_dto.go          # Zone request/response structs
-├── handler/
-│   ├── auth_handler.go      # Register & Login endpoints
-│   ├── reservation_handler.go # Reservation CRUD endpoints
-│   └── zone_handler.go      # Zone CRUD endpoints
-├── httpresponse/
-│   └── response.go          # Standardized Success, Error, Meta structs
-├── middleware/
-│   ├── jwt_auth.go          # JWT Bearer token validation
-│   └── role_auth.go         # Role-based access control
-├── models/
-│   ├── enum.go              # Role, ZoneType, ReservationStatus enums
-│   ├── migrate.go           # Auto-migration runner
-│   ├── parking_zone.go      # ParkingZone GORM model
-│   ├── reservation.go       # Reservation GORM model
-│   └── user.go              # User GORM model with bcrypt
-├── repository/
-│   ├── auth_repository.go   # User database operations
-│   ├── reservation_repository.go # Reservation DB ops with row locking
-│   └── zone_repository.go   # Zone DB ops with query builder
-├── routes/
-│   └── routes.go            # All API route registration
-├── seed/
-│   └── admin_seeder.go      # Auto-seeds admin user on startup
-├── server/
-│   └── http.go              # Echo server setup, middleware, DI, global error handler
-├── service/
-│   ├── auth_service.go      # Auth business logic & JWT generation
-│   ├── reservation_service.go # Reservation business logic
-│   └── zone_service.go      # Zone business logic
-├── utils/
-│   └── query_builder.go     # Pagination, sorting, search utility
-├── .env.example             # Environment template
-├── .air.toml                # Hot-reload config (Air)
-├── Dockerfile               # Multi-stage production build
-└── docker-compose.yaml      # Docker setup
+│   └── main.go                        # Entry point (config, DB, migrations, seed, server start)
+│
+├── internal/
+│   ├── config/
+│   │   ├── config.go                  # Environment variable loading
+│   │   └── db.go                      # PostgreSQL connection via GORM
+│   ├── dto/
+│   │   ├── auth_dto.go                # Auth request/response structs
+│   │   ├── reservation_dto.go         # Reservation request/response structs
+│   │   └── zone_dto.go               # Zone request/response structs
+│   ├── handler/
+│   │   ├── auth_handler.go            # Register & Login endpoints
+│   │   ├── reservation_handler.go     # Reservation CRUD endpoints
+│   │   └── zone_handler.go           # Zone CRUD endpoints
+│   ├── models/
+│   │   ├── enum.go                    # Role, ZoneType, ReservationStatus enums
+│   │   ├── migrate.go                 # Auto-migration runner
+│   │   ├── parking_zone.go            # ParkingZone GORM model
+│   │   ├── reservation.go             # Reservation GORM model
+│   │   └── user.go                    # User GORM model with bcrypt
+│   ├── repository/
+│   │   ├── auth_repository.go         # User database operations
+│   │   ├── reservation_repository.go  # Reservation DB ops with row locking
+│   │   └── zone_repository.go         # Zone DB ops with query builder
+│   ├── routes/
+│   │   └── routes.go                  # All API route registration
+│   ├── server/
+│   │   └── http.go                    # Echo server setup, middleware, DI, global error handler
+│   └── service/
+│       ├── auth_service.go            # Auth business logic & JWT generation
+│       ├── reservation_service.go     # Reservation business logic
+│       └── zone_service.go            # Zone business logic
+│
+├── pkg/
+│   ├── httpresponse/
+│   │   └── response.go               # Standardized Success, Error, Meta structs
+│   ├── middleware/
+│   │   ├── jwt_auth.go                # JWT Bearer token validation
+│   │   └── role_auth.go               # Role-based access control
+│   ├── seed/
+│   │   └── admin_seeder.go            # Auto-seeds admin user on startup
+│   └── utils/
+│       └── query_builder.go           # Pagination, sorting, search utility
+│
+├── .env.example                       # Environment template
+├── .air.toml                          # Hot-reload config (Air)
+├── Dockerfile                         # Multi-stage production build
+└── docker-compose.yaml                # Docker setup
 ```
 
 ---

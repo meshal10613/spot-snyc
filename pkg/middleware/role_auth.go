@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"spot-sync/httpresponse"
+	"spot-sync/pkg/httpresponse"
 
 	"github.com/labstack/echo/v4"
 )

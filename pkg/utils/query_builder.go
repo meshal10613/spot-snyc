@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 	"math"
-	"spot-sync/httpresponse"
+	"spot-sync/pkg/httpresponse"
 	"strconv"
 	"strings"
 

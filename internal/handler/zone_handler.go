@@ -2,10 +2,10 @@ package handler
 
 import (
 	"net/http"
-	"spot-sync/dto"
-	"spot-sync/httpresponse"
-	"spot-sync/service"
-	"spot-sync/utils"
+	"spot-sync/internal/dto"
+	"spot-sync/pkg/httpresponse"
+	"spot-sync/internal/service"
+	"spot-sync/pkg/utils"
 	"strconv"
 	"strings"
 

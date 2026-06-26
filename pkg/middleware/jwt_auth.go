@@ -3,7 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"spot-sync/httpresponse"
+	"spot-sync/pkg/httpresponse"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"

@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"spot-sync/handler"
-	"spot-sync/middleware"
-	"spot-sync/models"
+	"spot-sync/internal/handler"
+	"spot-sync/pkg/middleware"
+	"spot-sync/internal/models"
 
 	"github.com/labstack/echo/v4"
 )

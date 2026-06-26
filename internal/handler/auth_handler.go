@@ -2,9 +2,9 @@ package handler
 
 import (
 	"net/http"
-	"spot-sync/dto"
-	"spot-sync/httpresponse"
-	"spot-sync/service"
+	"spot-sync/internal/dto"
+	"spot-sync/pkg/httpresponse"
+	"spot-sync/internal/service"
 	"strings"
 
 	"github.com/labstack/echo/v4"

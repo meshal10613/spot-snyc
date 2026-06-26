@@ -3,10 +3,10 @@ package service
 import (
 	"errors"
 	"fmt"
-	"spot-sync/config"
-	"spot-sync/dto"
-	"spot-sync/models"
-	"spot-sync/repository"
+	"spot-sync/internal/config"
+	"spot-sync/internal/dto"
+	"spot-sync/internal/models"
+	"spot-sync/internal/repository"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"

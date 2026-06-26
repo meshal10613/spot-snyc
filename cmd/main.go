@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"spot-sync/config"
-	"spot-sync/models"
-	"spot-sync/seed"
-	"spot-sync/server"
+	"spot-sync/internal/config"
+	"spot-sync/internal/models"
+	"spot-sync/pkg/seed"
+	"spot-sync/internal/server"
 )
 
 func main() {

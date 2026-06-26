@@ -2,8 +2,8 @@ package seed
 
 import (
 	"fmt"
-	"spot-sync/config"
-	"spot-sync/models"
+	"spot-sync/internal/config"
+	"spot-sync/internal/models"
 
 	"gorm.io/gorm"
 )

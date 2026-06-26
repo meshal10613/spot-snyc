@@ -2,7 +2,7 @@ package repository
 
 import (
 	"errors"
-	"spot-sync/models"
+	"spot-sync/internal/models"
 
 	"gorm.io/gorm"
 )

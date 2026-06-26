@@ -3,10 +3,10 @@ package service
 import (
 	"errors"
 	"fmt"
-	"spot-sync/dto"
-	"spot-sync/models"
-	"spot-sync/repository"
-	"spot-sync/utils"
+	"spot-sync/internal/dto"
+	"spot-sync/internal/models"
+	"spot-sync/internal/repository"
+	"spot-sync/pkg/utils"
 )
 
 // ReservationService defines the reservation business logic contract.

@@ -2,12 +2,12 @@ package server
 
 import (
 	"net/http"
-	"spot-sync/config"
-	"spot-sync/handler"
-	"spot-sync/httpresponse"
-	"spot-sync/repository"
-	"spot-sync/routes"
-	"spot-sync/service"
+	"spot-sync/internal/config"
+	"spot-sync/internal/handler"
+	"spot-sync/pkg/httpresponse"
+	"spot-sync/internal/repository"
+	"spot-sync/internal/routes"
+	"spot-sync/internal/service"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
