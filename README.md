@@ -1,127 +1,114 @@
 # 🚗 SpotSync API
 
-> Smart Parking & EV Charging Reservation Platform
-
-A centralized backend API for managing parking zones and handling high-demand reservation of limited EV charging spots at airports and malls. Built with Go, Echo, GORM, and PostgreSQL.
-
-**Live URL:** `https://spotsync-api.onrender.com`
+> **Smart Parking & EV Charging Reservation Platform**
+>
+> A robust, high-performance, and concurrency-safe backend REST API designed to manage parking zones and handle high-demand reservations for limited EV charging and standard spots at airports, malls, and public zones.
 
 ---
 
-## ✨ Features
+## ⚡ Key Highlights & Features
 
-- **User Authentication** — Register & Login with JWT-based Bearer token auth (24h expiry)
-- **Role-Based Access Control** — `driver` and `admin` roles with middleware-enforced permissions
-- **Parking Zone Management** — Full CRUD for parking zones (admin) with real-time availability
-- **Reservation System** — Concurrency-safe parking spot reservation with row-level locking (`SELECT ... FOR UPDATE`)
-- **EV Charging Support** — Dedicated `ev_charging` zone type with capacity management
-- **Query Builder** — Built-in pagination, sorting, and search across all list endpoints
-- **Standardized Responses** — Consistent JSON response format using `httpresponse` package
-- **Global Error Handler** — Centralized 404 Not Found, 405 Method Not Allowed, and internal error handling
-- **Admin Seeder** — Auto-seeds an admin user on startup from environment variables (skips if already exists)
+- **🛡️ Secure Authentication** — Custom JWT-based user registration and login with bcrypt password hashing (cost factor: 12) and 24-hour token expiration.
+- **👥 Role-Based Access Control (RBAC)** — Distinct access controls for `driver` and `admin` roles, enforced via lightweight middleware.
+- **📦 Clean Architecture & Modular Layout** — Separation of concerns through a professional Go layout dividing code into `internal` (private app domain) and `pkg` (sharable packages).
+- **🔒 Pessimistic Concurrency Controls** — Prevents double-bookings and race conditions for high-demand parking slots using strict row-level locking (`SELECT ... FOR UPDATE`) in GORM transactions.
+- **🔍 Dynamic Query Builder** — Modular pagination, sorting, and ILIKE search filters parsed directly from HTTP queries and applied to GORM database adapters.
+- **🎯 Global Exception Handler** — Centrally handles unhandled execution panics, 404 (Not Found), 405 (Method Not Allowed), and struct validation errors (`go-playground/validator`).
+- **🌱 Automated Admin Provisioning** — Bootstraps/seeds the super-admin account on startup using environment variables if it does not already exist.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-| Technology | Purpose |
-|---|---|
-| **Go 1.22+** | Backend language |
-| **Echo v4** | HTTP web framework |
-| **GORM** | ORM with PostgreSQL driver |
-| **PostgreSQL** | Relational database |
-| **JWT (golang-jwt/jwt/v5)** | Token-based authentication |
-| **bcrypt** | Password hashing (cost 12) |
-| **go-playground/validator** | Request validation |
-
----
-
-## 🏛️ Architecture
-
-This project follows **Clean Architecture** with strict separation of concerns:
-
-```
-┌─────────────┐     ┌─────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Handler    │ ──▶ │   Service   │ ──▶ │  Repository  │ ──▶ │   Database   │
-│  (HTTP/JSON) │     │  (Business) │     │   (GORM)     │     │ (PostgreSQL) │
-└─────────────┘     └─────────────┘     └──────────────┘     └──────────────┘
-       │                    │
-       ▼                    ▼
-   ┌───────┐          ┌──────────┐
-   │  DTO  │          │  Models  │
-   │(Req/Res)│        │  (GORM)  │
-   └───────┘          └──────────┘
-```
-
-**Dependency Injection** is done manually in `internal/server/http.go`:
-
-```
-Repository → Service → Handler → Routes
-```
-
-The project is organized into three top-level directories:
-
-| Directory | Purpose |
-|---|---|
-| **`cmd/`** | Application entry point |
-| **`internal/`** | Private application code (not importable by external projects) |
-| **`pkg/`** | Reusable packages that can be imported by external projects |
+| Technology | Purpose | Description |
+| :--- | :--- | :--- |
+| **Go 1.22+** | Language | High-concurrency systems programming language |
+| **Echo v4** | HTTP Web Framework | High performance, extensible, and minimalist Go web framework |
+| **GORM** | Database ORM | Developer-friendly ORM with clean transaction syntax |
+| **PostgreSQL** | Database | Relational database ideal for transactional consistency and locking |
+| **JWT** | Token Auth | Signed tokens using `golang-jwt/jwt/v5` for stateless security |
+| **Bcrypt** | Encryption | Secure password hashing using `golang.org/x/crypto/bcrypt` |
+| **Validator** | Data Validation | Struct field verification using `go-playground/validator/v10` |
 
 ---
 
-## 📁 Project Structure
+## 🏛️ Architecture & Project Layout
+
+The codebase implements **Clean Layered Architecture** principles, maintaining a strict unidirectional flow of dependencies:
+
+```
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│     Handler     │ ────▶ │     Service     │ ────▶ │   Repository    │ ────▶ │   PostgreSQL    │
+│  (HTTP & DTOs)  │       │ (Business Logic)│       │ (Data Access)   │       │  (Persistence)  │
+└─────────────────┘       └─────────────────┘       └─────────────────┘       └─────────────────┘
+         │                         │
+         ▼                         ▼
+┌─────────────────┐       ┌─────────────────┐
+│       DTO       │       │     Models      │
+│ (Request/Resp)  │       │  (GORM Entity)  │
+└─────────────────┘       └─────────────────┘
+```
+
+### Dependency Injection Pipeline
+All dependencies are manually wired in the server bootstrapping process located in `internal/server/http.go`:
+```
+Repository ────▶ Service ────▶ Handler ────▶ HTTP Routes (Echo)
+```
+
+---
+
+## 📁 Directory Structure
+
+The project conforms to modern Go structure guidelines by separating private API logic (`internal/`) from reuseable packages (`pkg/`):
 
 ```
 spot-sync/
 ├── cmd/
-│   └── main.go                        # Entry point (config, DB, migrations, seed, server start)
-│
+│   └── main.go                     # App entry point (loads env, connects DB, migrates, seeds, starts HTTP)
 ├── internal/
 │   ├── config/
-│   │   ├── config.go                  # Environment variable loading
-│   │   └── db.go                      # PostgreSQL connection via GORM
+│   │   ├── config.go               # Config struct & environment parser
+│   │   └── db.go                   # GORM PostgreSQL connector setup
 │   ├── dto/
-│   │   ├── auth_dto.go                # Auth request/response structs
-│   │   ├── reservation_dto.go         # Reservation request/response structs
-│   │   └── zone_dto.go               # Zone request/response structs
+│   │   ├── auth_dto.go             # Registration/Login request/response payloads
+│   │   ├── reservation_dto.go      # Reservation request/response payloads
+│   │   └── zone_dto.go             # Zone request/response payloads
 │   ├── handler/
-│   │   ├── auth_handler.go            # Register & Login endpoints
-│   │   ├── reservation_handler.go     # Reservation CRUD endpoints
-│   │   └── zone_handler.go           # Zone CRUD endpoints
+│   │   ├── auth_handler.go         # Authentication controller
+│   │   ├── reservation_handler.go  # Reservation controller
+│   │   └── zone_handler.go         # Parking zone controller
 │   ├── models/
-│   │   ├── enum.go                    # Role, ZoneType, ReservationStatus enums
-│   │   ├── migrate.go                 # Auto-migration runner
-│   │   ├── parking_zone.go            # ParkingZone GORM model
-│   │   ├── reservation.go             # Reservation GORM model
-│   │   └── user.go                    # User GORM model with bcrypt
+│   │   ├── enum.go                 # Shared Enums (Role, ZoneType, ReservationStatus)
+│   │   ├── migrate.go              # Auto-migration runner using GORM schema synchronization
+│   │   ├── parking_zone.go         # ParkingZone database model
+│   │   ├── reservation.go          # Reservation database model
+│   │   └── user.go                 # User database model
 │   ├── repository/
-│   │   ├── auth_repository.go         # User database operations
-│   │   ├── reservation_repository.go  # Reservation DB ops with row locking
-│   │   └── zone_repository.go         # Zone DB ops with query builder
+│   │   ├── auth_repository.go      # User storage interactions
+│   │   ├── reservation_repository.go # Concurrency-safe reservation transactions
+│   │   └── zone_repository.go      # Parking zone database operations
 │   ├── routes/
-│   │   └── routes.go                  # All API route registration
+│   │   └── routes.go               # Route groups, permissions, and handlers mapping
 │   ├── server/
-│   │   └── http.go                    # Echo server setup, middleware, DI, global error handler
+│   │   └── http.go                 # Echo server setup (Validator, global middleware, DI, Error Handler)
 │   └── service/
-│       ├── auth_service.go            # Auth business logic & JWT generation
-│       ├── reservation_service.go     # Reservation business logic
-│       └── zone_service.go            # Zone business logic
-│
+│       ├── auth_service.go         # Authentication and token issuance business logic
+│       ├── reservation_service.go  # Reservation business rules
+│       └── zone_service.go         # Parking zone business rules
 ├── pkg/
 │   ├── httpresponse/
-│   │   └── response.go               # Standardized Success, Error, Meta structs
+│   │   └── response.go             # Standardized JSend-like Success and Error JSON payloads
 │   ├── middleware/
-│   │   ├── jwt_auth.go                # JWT Bearer token validation
-│   │   └── role_auth.go               # Role-based access control
+│   │   ├── jwt_auth.go             # Bearer Token extraction & verification middleware
+│   │   └── role_auth.go            # Role check (driver/admin) validation middleware
 │   ├── seed/
-│   │   └── admin_seeder.go            # Auto-seeds admin user on startup
+│   │   └── admin_seeder.go         # Admin user database seeder
 │   └── utils/
-│       └── query_builder.go           # Pagination, sorting, search utility
-│
-├── .env.example                       # Environment template
-├── .air.toml                          # Hot-reload config (Air)
-├── Dockerfile                         # Multi-stage production build
-└── docker-compose.yaml                # Docker setup
+│       └── query_builder.go        # Dynamic pagination, sorting, and filter builder
+├── .air.toml                       # Hot-reloading daemon configuration
+├── .env.example                    # Sample environment template
+├── Dockerfile                      # Multistage production Docker configuration
+└── docker-compose.yaml             # Docker Compose orchestrator file
 ```
 
 ---
@@ -129,161 +116,154 @@ spot-sync/
 ## 🚀 Getting Started
 
 ### Prerequisites
+- **Go**: 1.22+
+- **PostgreSQL**: 14+
+- **Air** (Optional): `go install github.com/air-verse/air@latest` (for hot reloading)
 
-- Go 1.22+
-- PostgreSQL database
-- (Optional) [Air](https://github.com/air-verse/air) for hot-reloading
+### Setup & Installation
 
-### Setup
-
-1. **Clone the repository**
+1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/yourusername/spot-sync.git
+   git clone https://github.com/your-username/spot-sync.git
    cd spot-sync
    ```
 
-2. **Configure environment variables**
+2. **Configure Environment Variables:**
+   Copy the example environment file and configure the settings for your database:
    ```bash
    cp .env.example .env
    ```
-
-3. **Required `.env` variables:**
+   Edit `.env`:
    ```env
    PORT=5000
-   DSN="host=localhost user=postgres password=yourpassword dbname=spotsync port=5432 sslmode=disable"
-   JWT_SECRET=your-secret-key-here
-
+   DSN="host=localhost user=postgres password=yourpassword dbname=spotsync port=5432 sslmode=disable TimeZone=Asia/Dhaka"
+   JWT_SECRET=your-secure-jwt-secret-key-here
+   
    # Admin Seed Credentials
    ADMIN_NAME=Admin
    ADMIN_EMAIL=admin@gmail.com
    ADMIN_PASSWORD=Admin@123
    ```
 
-4. **Install dependencies**
+3. **Install Dependencies:**
    ```bash
    go mod tidy
    ```
 
-5. **Run the server**
-   ```bash
-   go run ./cmd
-   ```
+4. **Launch the Application:**
+   * **Standard Go execution:**
+     ```bash
+     go run cmd/main.go
+     ```
+   * **Hot-reload execution (Development):**
+     ```bash
+     air
+     ```
+   * **Docker Compose execution:**
+     ```bash
+     docker-compose up --build
+     ```
 
-   Or with hot-reloading:
-   ```bash
-   air
-   ```
-
-### Docker
-
-```bash
-docker-compose up --build
+### App Startup Lifecycle
+On starting, the application undergoes the following sequence:
 ```
-
-### Startup Flow
-
+[Parse Env Variables] ──▶ [Init DB Conn] ──▶ [Execute GORM Schema Migration] ──▶ [Auto-Seed Admin] ──▶ [Start HTTP Server]
 ```
-Load Config → Connect DB → Run Migrations → Seed Admin → Start Server
-```
-
-On startup, the server automatically seeds an admin user using the `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env`. If the admin already exists (matched by email), the seed step is silently skipped.
+> [!NOTE]
+> The admin account is seeded conditionally. If a user matching `ADMIN_EMAIL` exists in the database, the step is skipped; otherwise, the account is created using the environment settings.
 
 ---
 
-## 🌐 API Endpoints
+## 🌐 API Route Specification
 
-### Health Check
-
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `GET` | `/` | Public | API health check |
-
-### Authentication
-
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Public | Register a new user |
-| `POST` | `/api/v1/auth/login` | Public | Login and receive JWT |
-
-### Parking Zones
-
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `GET` | `/api/v1/zones` | Public | Get all zones (paginated) |
-| `GET` | `/api/v1/zones/:id` | Public | Get a single zone |
-| `POST` | `/api/v1/zones` | Admin | Create a zone |
-| `PUT` | `/api/v1/zones/:id` | Admin | Update a zone |
-| `DELETE` | `/api/v1/zones/:id` | Admin | Delete a zone |
-
-### Reservations
-
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/reservations` | Auth | Reserve a parking spot |
-| `GET` | `/api/v1/reservations/my-reservations` | Auth | View my reservations (paginated) |
-| `DELETE` | `/api/v1/reservations/:id` | Auth | Cancel a reservation |
-| `GET` | `/api/v1/reservations` | Admin | View all reservations (paginated) |
-
-### Authentication Header
-
-```
-Authorization: Bearer <your-jwt-token>
+### HTTP Header Requirements
+For protected routes, include the JWT token in your request headers:
+```http
+Authorization: Bearer <your_jwt_token_here>
 ```
 
 ---
 
-## 📄 Query Parameters
+### Endpoints Table
 
-All paginated (`GET` list) endpoints support these query parameters:
-
-| Param | Default | Example | Description |
-|---|---|---|---|
-| `page` | `1` | `?page=2` | Page number (1-indexed) |
-| `limit` | `10` | `?limit=20` | Items per page (max 100) |
-| `sort` | `created_at` | `?sort=name` | Column to sort by |
-| `order` | `desc` | `?order=asc` | Sort direction (`asc` / `desc`) |
-| `search` | — | `?search=ev` | Search term (ILIKE across fields) |
-
-**Search fields per endpoint:**
-
-| Endpoint | Searchable Fields |
-|---|---|
-| `GET /api/v1/zones` | `name`, `type` |
-| `GET /api/v1/reservations` | `license_plate`, `status` |
-| `GET /api/v1/reservations/my-reservations` | `license_plate`, `status` |
-
-**Example:**
-
-```
-GET /api/v1/zones?page=1&limit=5&search=ev&sort=name&order=asc
-```
+| Category | HTTP Method | Route | Access | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **System** | `GET` | `/` | Public | Api Health check |
+| **Auth** | `POST` | `/api/v1/auth/register` | Public | Register a driver account |
+| **Auth** | `POST` | `/api/v1/auth/login` | Public | Sign in to acquire JWT token |
+| **Zones** | `GET` | `/api/v1/zones` | Public | List all zones (Paginated, Searchable) |
+| **Zones** | `GET` | `/api/v1/zones/:id` | Public | Fetch a specific zone by ID |
+| **Zones** | `POST` | `/api/v1/zones` | Admin | Create a new zone |
+| **Zones** | `PUT` | `/api/v1/zones/:id` | Admin | Update parking zone details |
+| **Zones** | `DELETE`| `/api/v1/zones/:id` | Admin | Delete a parking zone |
+| **Reservations** | `POST` | `/api/v1/reservations` | Auth (Driver/Admin) | Reserve a parking spot (Concurrency-safe) |
+| **Reservations** | `GET` | `/api/v1/reservations/my-reservations` | Auth (Driver/Admin) | List my reservations (Paginated) |
+| **Reservations** | `DELETE`| `/api/v1/reservations/:id` | Auth (Driver/Admin) | Cancel a reservation |
+| **Reservations** | `GET` | `/api/v1/reservations` | Admin | List all reservations (Paginated, Searchable) |
 
 ---
 
-## 📦 Response Format
+## 📄 Pagination, Sorting, & Filter Parameters
 
-All API responses follow a standardized JSON structure.
+All listing routes (`GET /api/v1/zones`, `GET /api/v1/reservations`, and `GET /api/v1/reservations/my-reservations`) integrate with `utils.QueryBuilder` to support standard query filters:
 
-### Success Response
+| Parameter | Default | Sample | Description |
+| :--- | :--- | :--- | :--- |
+| `page` | `1` | `?page=2` | Target page index (1-based) |
+| `limit` | `10` | `?limit=15` | Records limit per page (capped at `100`) |
+| `sort` | `created_at` | `?sort=name` | Database column sorting index |
+| `order` | `desc` | `?order=asc` | Ordering direction (`asc` or `desc`) |
+| `search` | `""` | `?search=Electric` | Substring search matching text fields (case-insensitive `ILIKE`) |
 
+### Search Field Configurations
+- **Parking Zones Search:** Queries against columns `name` and `type` (e.g. `ev_charging`, `standard`).
+- **Reservations Search:** Queries against columns `license_plate` and `status` (e.g. `active`, `cancelled`).
+
+---
+
+## 📦 Standardized API Responses
+
+The API uses a standard JSON response format to ensure consistency.
+
+### 1. Success Response (Paginated Lists)
 ```json
 {
   "success": true,
   "message": "Parking zones retrieved successfully",
-  "data": [ ... ],
+  "data": [
+    {
+      "id": 1,
+      "name": "Airport Term-1 EV Charge",
+      "type": "ev_charging",
+      "total_capacity": 5,
+      "created_at": "2026-06-26T10:00:00Z",
+      "updated_at": "2026-06-26T10:00:00Z"
+    }
+  ],
   "meta": {
     "page": 1,
     "limit": 10,
-    "total": 25,
-    "total_page": 3
+    "total": 1,
+    "total_page": 1
   }
 }
 ```
 
-> `meta` is included only on paginated list endpoints. Single-resource responses omit it.
+### 2. Success Response (Single Resource)
+```json
+{
+  "success": true,
+  "message": "Parking zone created successfully",
+  "data": {
+    "id": 2,
+    "name": "Mall of Asia Regular B1",
+    "type": "standard",
+    "total_capacity": 50
+  }
+}
+```
 
-### Error Response
-
+### 3. Validation or Client Errors (400 Bad Request)
 ```json
 {
   "success": false,
@@ -292,8 +272,7 @@ All API responses follow a standardized JSON structure.
 }
 ```
 
-### Not Found (404)
-
+### 4. Not Found Exception (404 Not Found)
 ```json
 {
   "success": false,
@@ -301,8 +280,7 @@ All API responses follow a standardized JSON structure.
 }
 ```
 
-### Method Not Allowed (405)
-
+### 5. Method Not Allowed (405 Method Not Allowed)
 ```json
 {
   "success": false,
@@ -310,39 +288,66 @@ All API responses follow a standardized JSON structure.
 }
 ```
 
----
-
-## 🔒 Concurrency Safety
-
-The reservation system uses **GORM database transactions** with **row-level locking** (`SELECT ... FOR UPDATE`) to prevent the "EV Spot Bottleneck" race condition:
-
-```go
-db.Transaction(func(tx *gorm.DB) error {
-    // 1. Lock the parking zone row
-    tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&zone, zoneID)
-    // 2. Count active reservations
-    // 3. Check capacity
-    // 4. Create reservation or reject
-})
+### 6. Internal Server Error (500 Server Error)
+```json
+{
+  "success": false,
+  "message": "Internal server error",
+  "details": "connection refused by database server"
+}
 ```
 
-This ensures that even if two drivers attempt to reserve the last available spot simultaneously, only one will succeed.
+---
+
+## 🔒 Concurrency Control & Safety
+
+To prevent double bookings and race conditions when multiple users attempt to reserve the last remaining parking spot simultaneously, SpotSync implements **Pessimistic Locking** (`SELECT ... FOR UPDATE`) within database transactions:
+
+```go
+func (r *reservationRepository) CreateWithLock(reservation *models.Reservation) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// 1. Lock the parking zone row to block concurrent reservations on the same zone
+		var zone models.ParkingZone
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&zone, reservation.ZoneID).Error; err != nil {
+			return err
+		}
+
+		// 2. Count active reservations for this zone
+		var activeCount int64
+		if err := tx.Model(&models.Reservation{}).
+			Where("zone_id = ? AND status = ?", reservation.ZoneID, models.ReservationStatusActive).
+			Count(&activeCount).Error; err != nil {
+			return err
+		}
+
+		// 3. Verify slot availability
+		if int(activeCount) >= zone.TotalCapacity {
+			return ErrZoneFull // Returns rollback automatically
+		}
+
+		// 4. Register the reservation atomically
+		return tx.Create(reservation).Error
+	})
+}
+```
+
+This locking mechanism forces concurrent requests targeting the same `zone_id` to execute sequentially, guaranteeing that the database never exceeds a zone's designated capacity.
 
 ---
 
-## 🌱 Environment Variables
+## 🌱 Environment Configuration Variables Reference
 
 | Variable | Required | Default | Description |
-|---|---|---|---|
-| `PORT` | No | `8080` | Server port |
-| `DSN` | Yes | — | PostgreSQL connection string |
-| `JWT_SECRET` | Yes | — | Secret key for signing JWT tokens |
-| `ADMIN_NAME` | No | `Admin` | Seeded admin user's name |
-| `ADMIN_EMAIL` | Yes | — | Seeded admin user's email |
-| `ADMIN_PASSWORD` | Yes | — | Seeded admin user's password |
+| :--- | :--- | :--- | :--- |
+| `PORT` | No | `8080` | Port on which the application web server listens |
+| `DSN` | **Yes** | — | PostgreSQL Database Source Name connection details |
+| `JWT_SECRET` | **Yes** | — | Security signature seed used to encode and decode user JWTs |
+| `ADMIN_NAME` | No | `Admin` | Default name given to the seeded admin user |
+| `ADMIN_EMAIL`| **Yes** | — | Email credentials used to seed/log in to the admin account |
+| `ADMIN_PASSWORD`| **Yes** | — | Password assigned to the seeded admin user (hashed before save) |
 
 ---
 
 ## 📜 License
 
-MIT
+Distributed under the MIT License. See `LICENSE` for more information.
