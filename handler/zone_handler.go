@@ -5,6 +5,7 @@ import (
 	"spot-sync/dto"
 	"spot-sync/httpresponse"
 	"spot-sync/service"
+	"spot-sync/utils"
 	"strconv"
 	"strings"
 
@@ -57,8 +58,11 @@ func (h *ZoneHandler) Create(c echo.Context) error {
 }
 
 // GetAll handles GET /api/v1/zones (Public)
+// Supports query params: page, limit, sort, order, search
 func (h *ZoneHandler) GetAll(c echo.Context) error {
-	zones, err := h.service.GetAll()
+	qb := utils.NewQueryBuilder(c)
+
+	zones, total, err := h.service.GetAll(qb)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, httpresponse.Error{
 			Success: false,
@@ -71,6 +75,7 @@ func (h *ZoneHandler) GetAll(c echo.Context) error {
 		Success: true,
 		Message: "Parking zones retrieved successfully",
 		Data:    zones,
+		Meta:    qb.GetMeta(total),
 	})
 }
 

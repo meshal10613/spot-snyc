@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"spot-sync/config"
 	"spot-sync/handler"
+	"spot-sync/httpresponse"
 	"spot-sync/models"
 	"spot-sync/repository"
 	"spot-sync/routes"
@@ -71,9 +72,9 @@ func main() {
 
 	// ── Health Check ──────────────────────────────────────────────────────
 	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"success": true,
-			"message": "SpotSync API is running 🚗",
+		return c.JSON(http.StatusOK, httpresponse.Success{
+			Success: true,
+			Message: "SpotSync API is running 🚗",
 		})
 	})
 

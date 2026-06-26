@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"spot-sync/models"
+	"spot-sync/utils"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -16,8 +17,8 @@ type ReservationRepository interface {
 	// CreateWithLock atomically checks capacity and creates a reservation using FOR UPDATE.
 	CreateWithLock(reservation *models.Reservation) error
 	FindByID(id uint) (*models.Reservation, error)
-	FindByUserID(userID uint) ([]models.Reservation, error)
-	FindAll() ([]models.Reservation, error)
+	FindByUserID(userID uint, qb *utils.QueryBuilder) ([]models.Reservation, int64, error)
+	FindAll(qb *utils.QueryBuilder) ([]models.Reservation, int64, error)
 	CancelReservation(id uint) error
 }
 
@@ -69,23 +70,47 @@ func (r *reservationRepository) FindByID(id uint) (*models.Reservation, error) {
 	return &reservation, err
 }
 
-// FindByUserID returns all reservations for a specific user with zone details.
-func (r *reservationRepository) FindByUserID(userID uint) ([]models.Reservation, error) {
+// FindByUserID returns all reservations for a specific user with zone details, paginated.
+func (r *reservationRepository) FindByUserID(userID uint, qb *utils.QueryBuilder) ([]models.Reservation, int64, error) {
 	var reservations []models.Reservation
-	err := r.db.Preload("Zone").
-		Where("user_id = ?", userID).
-		Order("created_at DESC").
+	var total int64
+
+	// Base query with user filter
+	baseQuery := r.db.Model(&models.Reservation{}).Where("user_id = ?", userID)
+
+	// Apply search
+	query := qb.ApplySearch(baseQuery, []string{"license_plate", "status"})
+
+	// Count total matching records
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination, sorting, preloads, then fetch
+	err := qb.ApplyPaginationAndSort(query).
+		Preload("Zone").
 		Find(&reservations).Error
-	return reservations, err
+	return reservations, total, err
 }
 
-// FindAll returns all reservations with user and zone details (admin use).
-func (r *reservationRepository) FindAll() ([]models.Reservation, error) {
+// FindAll returns all reservations with user and zone details, paginated (admin use).
+func (r *reservationRepository) FindAll(qb *utils.QueryBuilder) ([]models.Reservation, int64, error) {
 	var reservations []models.Reservation
-	err := r.db.Preload("User").Preload("Zone").
-		Order("created_at DESC").
+	var total int64
+
+	// Apply search
+	query := qb.ApplySearch(r.db.Model(&models.Reservation{}), []string{"license_plate", "status"})
+
+	// Count total matching records
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination, sorting, preloads, then fetch
+	err := qb.ApplyPaginationAndSort(query).
+		Preload("User").Preload("Zone").
 		Find(&reservations).Error
-	return reservations, err
+	return reservations, total, err
 }
 
 // CancelReservation sets the reservation status to "cancelled".

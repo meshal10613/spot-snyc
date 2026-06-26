@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"spot-sync/httpresponse"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -17,17 +18,17 @@ func JWTAuth(secret string) echo.MiddlewareFunc {
 			// Extract Bearer token from Authorization header
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Missing authorization header",
+				return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+					Success: false,
+					Message: "Missing authorization header",
 				})
 			}
 
 			parts := strings.SplitN(authHeader, " ", 2)
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Invalid authorization header format. Use: Bearer <token>",
+				return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+					Success: false,
+					Message: "Invalid authorization header format. Use: Bearer <token>",
 				})
 			}
 
@@ -42,34 +43,34 @@ func JWTAuth(secret string) echo.MiddlewareFunc {
 			})
 
 			if err != nil || !token.Valid {
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Invalid or expired token",
+				return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+					Success: false,
+					Message: "Invalid or expired token",
 				})
 			}
 
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Invalid token claims",
+				return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+					Success: false,
+					Message: "Invalid token claims",
 				})
 			}
 
 			// Extract user_id (JWT encodes numbers as float64)
 			userIDFloat, ok := claims["user_id"].(float64)
 			if !ok {
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Invalid user ID in token",
+				return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+					Success: false,
+					Message: "Invalid user ID in token",
 				})
 			}
 
 			role, ok := claims["role"].(string)
 			if !ok {
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Invalid role in token",
+				return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+					Success: false,
+					Message: "Invalid role in token",
 				})
 			}
 

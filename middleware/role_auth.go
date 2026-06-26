@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"spot-sync/httpresponse"
 
 	"github.com/labstack/echo/v4"
 )
@@ -13,9 +14,9 @@ func RequireRole(roles ...string) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			role, ok := c.Get("role").(string)
 			if !ok {
-				return c.JSON(http.StatusForbidden, map[string]interface{}{
-					"success": false,
-					"message": "Access denied",
+				return c.JSON(http.StatusForbidden, httpresponse.Error{
+					Success: false,
+					Message: "Access denied",
 				})
 			}
 
@@ -25,9 +26,9 @@ func RequireRole(roles ...string) echo.MiddlewareFunc {
 				}
 			}
 
-			return c.JSON(http.StatusForbidden, map[string]interface{}{
-				"success": false,
-				"message": "You don't have permission to access this resource",
+			return c.JSON(http.StatusForbidden, httpresponse.Error{
+				Success: false,
+				Message: "You don't have permission to access this resource",
 			})
 		}
 	}

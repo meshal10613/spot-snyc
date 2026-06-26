@@ -6,14 +6,15 @@ import (
 	"spot-sync/dto"
 	"spot-sync/models"
 	"spot-sync/repository"
+	"spot-sync/utils"
 )
 
 // ReservationService defines the reservation business logic contract.
 type ReservationService interface {
 	Create(userID uint, req *dto.CreateReservationRequest) (*dto.ReservationResponse, error)
-	GetMyReservations(userID uint) ([]dto.MyReservationResponse, error)
+	GetMyReservations(userID uint, qb *utils.QueryBuilder) ([]dto.MyReservationResponse, int64, error)
 	Cancel(reservationID, userID uint, userRole string) error
-	GetAll() ([]dto.AdminReservationResponse, error)
+	GetAll(qb *utils.QueryBuilder) ([]dto.AdminReservationResponse, int64, error)
 }
 
 type reservationService struct {
@@ -66,11 +67,11 @@ func (s *reservationService) Create(userID uint, req *dto.CreateReservationReque
 	}, nil
 }
 
-// GetMyReservations returns all reservations for the authenticated user with zone details.
-func (s *reservationService) GetMyReservations(userID uint) ([]dto.MyReservationResponse, error) {
-	reservations, err := s.repo.FindByUserID(userID)
+// GetMyReservations returns all reservations for the authenticated user with zone details, paginated.
+func (s *reservationService) GetMyReservations(userID uint, qb *utils.QueryBuilder) ([]dto.MyReservationResponse, int64, error) {
+	reservations, total, err := s.repo.FindByUserID(userID, qb)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch reservations: %w", err)
+		return nil, 0, fmt.Errorf("failed to fetch reservations: %w", err)
 	}
 
 	responses := make([]dto.MyReservationResponse, 0, len(reservations))
@@ -88,7 +89,7 @@ func (s *reservationService) GetMyReservations(userID uint) ([]dto.MyReservation
 		})
 	}
 
-	return responses, nil
+	return responses, total, nil
 }
 
 // Cancel changes a reservation status to "cancelled".
@@ -114,11 +115,11 @@ func (s *reservationService) Cancel(reservationID, userID uint, userRole string)
 	return s.repo.CancelReservation(reservationID)
 }
 
-// GetAll returns all reservations with user and zone details (admin only).
-func (s *reservationService) GetAll() ([]dto.AdminReservationResponse, error) {
-	reservations, err := s.repo.FindAll()
+// GetAll returns all reservations with user and zone details, paginated (admin only).
+func (s *reservationService) GetAll(qb *utils.QueryBuilder) ([]dto.AdminReservationResponse, int64, error) {
+	reservations, total, err := s.repo.FindAll(qb)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch reservations: %w", err)
+		return nil, 0, fmt.Errorf("failed to fetch reservations: %w", err)
 	}
 
 	responses := make([]dto.AdminReservationResponse, 0, len(reservations))
@@ -142,5 +143,5 @@ func (s *reservationService) GetAll() ([]dto.AdminReservationResponse, error) {
 		})
 	}
 
-	return responses, nil
+	return responses, total, nil
 }

@@ -6,12 +6,13 @@ import (
 	"spot-sync/dto"
 	"spot-sync/models"
 	"spot-sync/repository"
+	"spot-sync/utils"
 )
 
 // ZoneService defines the parking zone business logic contract.
 type ZoneService interface {
 	Create(req *dto.CreateZoneRequest) (*dto.ZoneDetailResponse, error)
-	GetAll() ([]dto.ZoneResponse, error)
+	GetAll(qb *utils.QueryBuilder) ([]dto.ZoneResponse, int64, error)
 	GetByID(id uint) (*dto.ZoneResponse, error)
 	Update(id uint, req *dto.UpdateZoneRequest) (*dto.ZoneDetailResponse, error)
 	Delete(id uint) error
@@ -49,11 +50,11 @@ func (s *zoneService) Create(req *dto.CreateZoneRequest) (*dto.ZoneDetailRespons
 	}, nil
 }
 
-// GetAll retrieves all zones with dynamically calculated available_spots.
-func (s *zoneService) GetAll() ([]dto.ZoneResponse, error) {
-	zones, err := s.repo.FindAll()
+// GetAll retrieves all zones with dynamically calculated available_spots, paginated.
+func (s *zoneService) GetAll(qb *utils.QueryBuilder) ([]dto.ZoneResponse, int64, error) {
+	zones, total, err := s.repo.FindAll(qb)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch parking zones: %w", err)
+		return nil, 0, fmt.Errorf("failed to fetch parking zones: %w", err)
 	}
 
 	responses := make([]dto.ZoneResponse, 0, len(zones))
@@ -61,7 +62,7 @@ func (s *zoneService) GetAll() ([]dto.ZoneResponse, error) {
 		// Dynamically calculate available spots
 		activeCount, err := s.repo.CountActiveReservations(z.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to count reservations for zone %d: %w", z.ID, err)
+			return nil, 0, fmt.Errorf("failed to count reservations for zone %d: %w", z.ID, err)
 		}
 
 		responses = append(responses, dto.ZoneResponse{
@@ -75,7 +76,7 @@ func (s *zoneService) GetAll() ([]dto.ZoneResponse, error) {
 		})
 	}
 
-	return responses, nil
+	return responses, total, nil
 }
 
 // GetByID retrieves a single zone with dynamically calculated available_spots.

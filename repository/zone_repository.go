@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"spot-sync/models"
+	"spot-sync/utils"
 
 	"gorm.io/gorm"
 )
@@ -10,7 +11,7 @@ import (
 // ZoneRepository defines all database operations for parking zones.
 type ZoneRepository interface {
 	Create(zone *models.ParkingZone) error
-	FindAll() ([]models.ParkingZone, error)
+	FindAll(qb *utils.QueryBuilder) ([]models.ParkingZone, int64, error)
 	FindByID(id uint) (*models.ParkingZone, error)
 	Update(zone *models.ParkingZone) error
 	Delete(id uint) error
@@ -30,10 +31,23 @@ func (r *zoneRepository) Create(zone *models.ParkingZone) error {
 	return r.db.Create(zone).Error
 }
 
-func (r *zoneRepository) FindAll() ([]models.ParkingZone, error) {
+// FindAll retrieves zones with pagination, sorting, and search.
+// Returns the list of zones, total count (before pagination), and any error.
+func (r *zoneRepository) FindAll(qb *utils.QueryBuilder) ([]models.ParkingZone, int64, error) {
 	var zones []models.ParkingZone
-	err := r.db.Order("created_at DESC").Find(&zones).Error
-	return zones, err
+	var total int64
+
+	// Apply search filters to base query
+	query := qb.ApplySearch(r.db.Model(&models.ParkingZone{}), []string{"name", "type"})
+
+	// Count total matching records (before pagination)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Apply pagination and sorting, then fetch
+	err := qb.ApplyPaginationAndSort(query).Find(&zones).Error
+	return zones, total, err
 }
 
 func (r *zoneRepository) FindByID(id uint) (*models.ParkingZone, error) {
