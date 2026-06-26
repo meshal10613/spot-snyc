@@ -17,6 +17,8 @@ A centralized backend API for managing parking zones and handling high-demand re
 - **EV Charging Support** — Dedicated `ev_charging` zone type with capacity management
 - **Query Builder** — Built-in pagination, sorting, and search across all list endpoints
 - **Standardized Responses** — Consistent JSON response format using `httpresponse` package
+- **Global Error Handler** — Centralized 404 Not Found, 405 Method Not Allowed, and internal error handling
+- **Admin Seeder** — Auto-seeds an admin user on startup from environment variables (skips if already exists)
 
 ---
 
@@ -64,7 +66,7 @@ Repository → Service → Handler → Routes
 ```
 spot-sync/
 ├── cmd/
-│   └── main.go              # Entry point (config, DB, migrations, server start)
+│   └── main.go              # Entry point (config, DB, migrations, seed, server start)
 ├── config/
 │   ├── config.go            # Environment variable loading
 │   └── db.go                # PostgreSQL connection via GORM
@@ -93,8 +95,10 @@ spot-sync/
 │   └── zone_repository.go   # Zone DB ops with query builder
 ├── routes/
 │   └── routes.go            # All API route registration
+├── seed/
+│   └── admin_seeder.go      # Auto-seeds admin user on startup
 ├── server/
-│   └── http.go              # Echo server setup, middleware, DI wiring
+│   └── http.go              # Echo server setup, middleware, DI, global error handler
 ├── service/
 │   ├── auth_service.go      # Auth business logic & JWT generation
 │   ├── reservation_service.go # Reservation business logic
@@ -131,10 +135,15 @@ spot-sync/
    ```
 
 3. **Required `.env` variables:**
-   ```
+   ```env
    PORT=5000
    DSN="host=localhost user=postgres password=yourpassword dbname=spotsync port=5432 sslmode=disable"
    JWT_SECRET=your-secret-key-here
+
+   # Admin Seed Credentials
+   ADMIN_NAME=Admin
+   ADMIN_EMAIL=admin@gmail.com
+   ADMIN_PASSWORD=Admin@123
    ```
 
 4. **Install dependencies**
@@ -157,6 +166,14 @@ spot-sync/
 ```bash
 docker-compose up --build
 ```
+
+### Startup Flow
+
+```
+Load Config → Connect DB → Run Migrations → Seed Admin → Start Server
+```
+
+On startup, the server automatically seeds an admin user using the `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env`. If the admin already exists (matched by email), the seed step is silently skipped.
 
 ---
 
@@ -262,6 +279,24 @@ All API responses follow a standardized JSON structure.
 }
 ```
 
+### Not Found (404)
+
+```json
+{
+  "success": false,
+  "message": "The requested resource was not found"
+}
+```
+
+### Method Not Allowed (405)
+
+```json
+{
+  "success": false,
+  "message": "Method not allowed"
+}
+```
+
 ---
 
 ## 🔒 Concurrency Safety
@@ -279,6 +314,19 @@ db.Transaction(func(tx *gorm.DB) error {
 ```
 
 This ensures that even if two drivers attempt to reserve the last available spot simultaneously, only one will succeed.
+
+---
+
+## 🌱 Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `PORT` | No | `8080` | Server port |
+| `DSN` | Yes | — | PostgreSQL connection string |
+| `JWT_SECRET` | Yes | — | Secret key for signing JWT tokens |
+| `ADMIN_NAME` | No | `Admin` | Seeded admin user's name |
+| `ADMIN_EMAIL` | Yes | — | Seeded admin user's email |
+| `ADMIN_PASSWORD` | Yes | — | Seeded admin user's password |
 
 ---
 
