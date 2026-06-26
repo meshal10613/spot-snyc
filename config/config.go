@@ -9,9 +9,12 @@ import (
 
 // Config holds all environment-level configuration.
 type Config struct {
-	Port      string
-	DSN       string
-	JWTSecret string
+	Port          string
+	DSN           string
+	JWTSecret     string
+	AdminName     string
+	AdminEmail    string
+	AdminPassword string
 }
 
 // LoadEnv reads the .env file and returns a Config struct.
@@ -34,9 +37,27 @@ func LoadEnv() (*Config, error) {
 		log.Fatal("JWT_SECRET environment variable is required")
 	}
 
+	adminName := os.Getenv("ADMIN_NAME")
+	if adminName == "" {
+		adminName = "Admin"
+	}
+
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	if adminEmail == "" {
+		log.Fatal("ADMIN_EMAIL environment variable is required")
+	}
+
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		log.Fatal("ADMIN_PASSWORD environment variable is required")
+	}
+
 	return &Config{
-		Port:      port,
-		DSN:       dsn,
-		JWTSecret: jwtSecret,
+		Port:          port,
+		DSN:           dsn,
+		JWTSecret:     jwtSecret,
+		AdminName:     adminName,
+		AdminEmail:    adminEmail,
+		AdminPassword: adminPassword,
 	}, nil
 }

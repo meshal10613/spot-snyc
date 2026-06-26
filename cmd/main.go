@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"spot-sync/config"
 	"spot-sync/models"
+	"spot-sync/seed"
 	"spot-sync/server"
 )
 
@@ -25,6 +26,11 @@ func main() {
 		log.Fatal("❌ Migration failed: ", err)
 	}
 	fmt.Println("✅ Migrations completed")
+
+	// ── Seed Admin ────────────────────────────────────────────────────────
+	if err := seed.AdminSeeder(db, cfg); err != nil {
+		log.Fatal("❌ Admin seeding failed: ", err)
+	}
 
 	// ── Start Server ──────────────────────────────────────────────────────
 	e := server.NewHTTPServer(cfg, db)
